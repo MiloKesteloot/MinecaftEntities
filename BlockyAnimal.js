@@ -89,6 +89,14 @@ let fpsElement;
 
 function setUpElements() {
     fpsElement = document.getElementById("fps");
+    document.getElementById('neckYawAngleSlide').addEventListener('input', function() {g_neckYawAngle = -this.value;})
+    document.getElementById('neckPitchAngleSlide').addEventListener('input', function() {g_neckPitchAngle = -this.value;})
+    document.getElementById('thighAngleSlide').addEventListener('input', function() {g_thighAngle = -this.value;})
+    document.getElementById('calfAngleSlide').addEventListener('input', function() {g_calfAngle = -this.value;})
+    document.getElementById('backFootAngleSlide').addEventListener('input', function() {g_backFootAngle = -this.value;})
+    document.getElementById('forearmAngleSlide').addEventListener('input', function() {g_forearmAngle = -this.value;})
+    document.getElementById('wristAngleSlide').addEventListener('input', function() {g_wristAngle = -this.value;})
+    document.getElementById('footAngleSlide').addEventListener('input', function() {g_footAngle = -this.value;})
     document.getElementById('yawSlide').addEventListener('input', function() {g_globalYawAngle = -this.value;})
     document.getElementById('pitchSlide').addEventListener('input', function() {g_globalPitchAngle = -this.value;})
 }
@@ -154,13 +162,14 @@ function buildModel() {
     }
     let neck = parts.body;
     for (let i = 0; i < 5; i++) {
-        neck = neck.add(new Cube(-37 - 10*i, 0, -2.5, 10, 10, 10,       -37 - 10*i + 5, 0, -2.5, "(Math.sin(g_seconds*g_speed + " + i/1.2 + ") + 0.3) * 4", 0, 1, 0));
+        neck = neck.add(new Cube(-37 - 10*i, 0, -2.5, 0.01, 0.01, 0.01,       -37 - 10*i + 5, 0, -2.5, g_neckYawAngle, 0, 0, 1))
+        neck = neck.add(new Cube(-37 - 10*i, 0, -2.5, 10, 10, 10,       -37 - 10*i + 5, 0, -2.5, "(Math.sin(g_seconds*g_speed + " + i/1.2 + ") + 0.3) * 4 + " + g_neckPitchAngle, 0, 1, 0));
         neck.add((new Cube(-37 - 10*i, 0, 4.5, 6, 2, 4)).col(125, 125, 125, 255));
     }
+
     const head = neck.add(new Cube(-90, 0, -2.5, 16, 16, 16,       -90, 0, -2.5, "(Math.sin(g_seconds*g_speed - 1) - 0.3) * 7", 0, 1, 0));
     head.add(new Cube(-106, 0, -4, 16, 12, 5)) // nose
     head.add(new Cube(-106, 0, -8.5, 16, 12, 4,          -98, 0, -8.5, "(Math.sin(g_seconds*g_speed)+1) * 8", 0, 1, 0)) // jaw
-
 
     // Mirrored things
     for (let i = 0; i < 2; i++) {
@@ -176,13 +185,13 @@ function buildModel() {
         head.add(new Cube(-98 - flat*2, 4.5 * n, 1, flat, 1, 1).col(204, 0, 250, 255))
         head.add(new Cube(-98 - flat*2, 4 * n, 0, flat, 2, 1).col(204, 0, 250, 255))
 
-        const forearm = parts.body.add(new Cube(-16, 16 * n, -6, 24, 8, 8,         -24, 16 * n, -6, "(Math.sin(g_seconds*g_speed) - 0.3) * 1 - 13", 0, 1, 0));
-        const wrist = forearm.add(new Cube(5, 16 * n, -7, 24, 6, 6,         -4, 16 * n, -7, "(Math.sin(g_seconds*g_speed) - 0.3) * 1 - 30", 0, 1, 0));
-        const foot = wrist.add(new Cube(18, 16 * n, -12, 4, 8, 16,         15, 16 * n, -7, "(Math.sin(g_seconds*g_speed) - 0.3) * 1 + 43", 0, 1, 0));
+        const forearm = parts.body.add(new Cube(-16, 16 * n, -6, 24, 8, 8,         -24, 16 * n, -6, "(Math.sin(g_seconds*g_speed) - 0.3) * 1 - 13 + " + g_forearmAngle, 0, 1, 0));
+        const wrist = forearm.add(new Cube(5, 16 * n, -7, 24, 6, 6,         -4, 16 * n, -7, "(Math.sin(g_seconds*g_speed) - 0.3) * 1 - 30 + " + g_wristAngle, 0, 1, 0));
+        const foot = wrist.add(new Cube(18, 16 * n, -12, 4, 8, 16,         15, 16 * n, -7, "(Math.sin(g_seconds*g_speed) - 0.3) * 1 + 43 + " + g_footAngle, 0, 1, 0));
 
-        const thigh = parts.body.add(new Cube(33, 16 * n, -3, 32, 16, 16,         25, 16 * n, -3, "(Math.sin(g_seconds*g_speed) + 0.3) * 1 - 30", 0, 1, 0));
-        const shin = thigh.add(new Cube(64, 16 * n, -3, 32, 12, 12,         54, 16 * n, -3, "(Math.sin(g_seconds*g_speed + 2)) * 1 + 30", 0, 1, 0));
-        const backFoot = shin.add(new Cube(82, 16 * n, -12, 6, 18, 24,         79, 16 * n, -3, "(Math.sin(g_seconds*g_speed + 2)) * 1 + 40", 0, 1, 0));
+        const thigh = parts.body.add(new Cube(33, 16 * n, -3, 32, 16, 16,         25, 16 * n, -3, "(Math.sin(g_seconds*g_speed) + 0.3) * 1 - 30 + " + g_thighAngle, 0, 1, 0));
+        const shin = thigh.add(new Cube(64, 16 * n, -3, 32, 12, 12,         54, 16 * n, -3, "(Math.sin(g_seconds*g_speed + 2)) * 1 + 30 + " + g_calfAngle, 0, 1, 0));
+        const backFoot = shin.add(new Cube(82, 16 * n, -12, 6, 18, 24,         79, 16 * n, -3, "(Math.sin(g_seconds*g_speed + 2)) * 1 + 40 + " + g_backFootAngle, 0, 1, 0));
 
         // Wings!
         const wingFrame1 = parts.body.add(new Cube(-20, 40 * n, 12, 8, 56, 8,      -20, 12*n, 12, "((Math.sin(g_seconds*g_speed + 2.2)) * 55 - 10) * " + n, 1, 0, 0).col(125, 125, 125, 255))
@@ -214,6 +223,16 @@ let g_globalPitchAngle = -30;
 let g_startTime = performance.now()/1000.0;
 let g_seconds = performance.now()/1000.0-g_startTime;
 let g_speed = 3.7;
+
+// Animation thingies:
+let g_neckYawAngle = 0;
+let g_neckPitchAngle = 0;
+let g_thighAngle = 0;
+let g_calfAngle = 0;
+let g_backFootAngle = 0;
+let g_forearmAngle = 0;
+let g_wristAngle = 0;
+let g_footAngle = 0;
 
 function click(event) {
     console.error("Click event is not defined");
