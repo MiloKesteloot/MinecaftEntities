@@ -40,6 +40,10 @@ function setUpWebGL() {
     }
 
     gl.enable(gl.DEPTH_TEST);
+
+    // CubeMesh.init();
+
+    tick();
 }
 
 function connectVariablesToGLSL() {
@@ -92,6 +96,12 @@ function setUpElements() {
 let rscalls = 0;
 
 function main() {
+
+    loadAnimal(animal);
+
+    console.log(animalModel);
+    console.log(animalAnim);
+
     setUpWebGL();
 
     connectVariablesToGLSL();
@@ -132,15 +142,22 @@ function renderScene() {
     const globalRotMat = new Matrix4().translate(0, 0, 0.1).rotate(g_globalAngle, 0, 1, 0);
     gl.uniformMatrix4fv(u_GloabalRotateMatrix, false, globalRotMat.elements)
  
-    let len = g_points.length;
-    for (let i = 0; i < len; i++) {
-        let p = g_points[i];
-        p.render();
-    }
+    // let len = g_points.length;
+    // for (let i = 0; i < len; i++) {
+    //     let p = g_points[i];
+    //     p.render();
+    // }
 
-    // drawObjAndChildren(enderDragon.bones, new Matrix4());
+    drawObjAndChildren(enderDragon.bones, new Matrix4());
 
-    requestAnimationFrame(renderScene);
+}
+
+let variable;
+
+function tick() {
+    variable = getAnimationVariables();
+    renderScene();
+    requestAnimationFrame(tick);
 }
 
 function drawObjAndChildren(obj, matrix) {
@@ -154,19 +171,23 @@ function drawObjAndChildren(obj, matrix) {
     const cubes = obj.cubes;
     if (cubes === undefined) return;
 
-    for (let c of cubes) {
+    let rotation = undefined;
 
-        console.log(c)
-        
-        drawCubePart(c.size, c.origin);
+    // if (obj.name === "wing") {
+    //     rotation = [document.getElementById('wingSlide').value, 0, 0, 1];
+    //     // console.log(obj.pivot)
+    // }
+
+    for (let c of cubes) {
+        drawCubePart(c.size, c.origin, obj.pivot, rotation);
         if (c.mirror === true) {
             const newOrigin = [c.origin[0], -c.origin[1], c.origin[2]];
-            drawCubePart(c.size, newOrigin);
+            drawCubePart(c.size, newOrigin, obj.pivot, rotation);
         }
     }
 }
 
-function drawCubePart(size, origin) {
+function drawCubePart(size, origin, pivot, rotation) {
     const cube = new Cube();
     cube.color = [1, 0, 0, 1];
     
@@ -174,6 +195,19 @@ function drawCubePart(size, origin) {
     cube.matrix.scale(0.2, 0.2, 0.2);
     cube.matrix.scale(0.2, 0.2, 0.2);
 
+    if (pivot !== undefined && rotation !== undefined) {
+
+        // 1. move to pivot
+        cube.matrix.translate(pivot[0], pivot[1], pivot[2]);
+
+        // 2. rotate around pivot
+        cube.matrix.rotate(rotation[0], rotation[1], rotation[2], rotation[3]);
+
+        // 3. move back from pivot
+        cube.matrix.translate(-pivot[0], -pivot[1], -pivot[2]);
+    }
+
+    // cube.matrix.rotate(rotation[0], rotation[1], rotation[2], rotation[3])
     cube.matrix.translate(origin[0], origin[1], origin[2]);
     cube.matrix.scale(size[0], size[1], size[2]);
     cube.render();
@@ -221,309 +255,21 @@ function updateFPS(now) {
 
 requestAnimationFrame(updateFPS);
 
-const enderDragonJSON = `
-{
-    "description": {
-    "identifier": "geometry.dragon",
-    "visible_bounds_width": 14,
-    "visible_bounds_height": 13,
-    "visible_bounds_offset": [ 0, 2, 0 ],
-    "texture_width": 256,
-    "texture_height": 256
-    },
-    "bones": [
-    {
-        "name": "root",
-        "pivot": [ 0.0, 24.0, 0.0 ]
-    },
-    {
-        "name": "head",
-        "pivot": [ 0.0, 24.0, 0.0 ],
-        "cubes": [
-        {
-            "origin": [ -6.0, 20.0, -24.0 ],
-            "size": [ 12.0, 5.0, 16.0 ],
-            "uv": [ 176, 44 ]
-        },
-        {
-            "origin": [ -8.0, 16.0, -10.0 ],
-            "size": [ 16.0, 16.0, 16.0 ],
-            "uv": [ 112, 30 ]
-        },
-        {
-            "mirror": true,
-            "origin": [ -5.0, 32.0, -4.0 ],
-            "size": [ 2.0, 4.0, 6.0 ],
-            "uv": [ 0, 0 ]
-        },
-        {
-            "mirror": true,
-            "origin": [ -5.0, 25.0, -22.0 ],
-            "size": [ 2.0, 2.0, 4.0 ],
-            "uv": [ 112, 0 ]
-        },
-        {
-            "origin": [ 3.0, 32.0, -4.0 ],
-            "size": [ 2.0, 4.0, 6.0 ],
-            "uv": [ 0, 0 ]
-        },
-        {
-            "origin": [ 3.0, 25.0, -22.0 ],
-            "size": [ 2.0, 2.0, 4.0 ],
-            "uv": [ 112, 0 ]
-        }
-        ]
-    },
-    {
-        "name": "jaw",
-        "parent": "head",
-        "pivot": [ 0.0, 20.0, -8.0 ],
-        "cubes": [
-        {
-            "origin": [ -6.0, 16.0, -24.0 ],
-            "size": [ 12.0, 4.0, 16.0 ],
-            "uv": [ 176, 65 ]
-        }
-        ]
-    },
-    {
-        "name": "neck",
-        "pivot": [ 0.0, 24.0, 0.0 ],
-        "cubes": [
-        {
-            "origin": [ -5.0, 19.0, -5.0 ],
-            "size": [ 10.0, 10.0, 10.0 ],
-            "uv": [ 192, 104 ]
-        },
-        {
-            "origin": [ -1.0, 29.0, -3.0 ],
-            "size": [ 2.0, 4.0, 6.0 ],
-            "uv": [ 48, 0 ]
-        }
-        ]
-    },
-    {
-        "name": "body",
-        "pivot": [ 0.0, 20.0, 8.0 ],
-        "cubes": [
-        {
-            "origin": [ -12.0, -4.0, -8.0 ],
-            "size": [ 24.0, 24.0, 64.0 ],
-            "uv": [ 0, 0 ]
-        },
-        {
-            "origin": [ -1.0, 20.0, -2.0 ],
-            "size": [ 2.0, 6.0, 12.0 ],
-            "uv": [ 220, 53 ]
-        },
-        {
-            "origin": [ -1.0, 20.0, 18.0 ],
-            "size": [ 2.0, 6.0, 12.0 ],
-            "uv": [ 220, 53 ]
-        },
-        {
-            "origin": [ -1.0, 20.0, 38.0 ],
-            "size": [ 2.0, 6.0, 12.0 ],
-            "uv": [ 220, 53 ]
-        }
-        ]
-    },
-    {
-        "name": "wing",
-        "pivot": [ -12.0, 19.0, 2.0 ],
-        "cubes": [
-        {
-            "origin": [ -68.0, 15.0, -2.0 ],
-            "size": [ 56.0, 8.0, 8.0 ],
-            "uv": [ 112, 88 ]
-        },
-        {
-            "origin": [ -68.0, 19.0, 4.0 ],
-            "size": [ 56.0, 0.0, 56.0 ],
-            "uv": [ -56, 88 ]
-        }
-        ]
-    },
-    {
-        "name": "wingtip",
-        "pivot": [ -56.0, 24.0, 0.0 ],
-        "cubes": [
-        {
-            "origin": [ -112.0, 22.0, -2.0 ],
-            "size": [ 56.0, 4.0, 4.0 ],
-            "uv": [ 112, 136 ]
-        },
-        {
-            "origin": [ -112.0, 24.0, 2.0 ],
-            "size": [ 56.0, 0.0, 56.0 ],
-            "uv": [ -56, 144 ]
-        }
-        ]
-    },
-    {
-        "name": "wing1",
-        "pivot": [ 12.0, 19.0, 2.0 ],
-        "cubes": [
-        {
-            "origin": [ -44.0, 15.0, -2.0 ],
-            "size": [ 56.0, 8.0, 8.0 ],
-            "uv": [ 112, 88 ]
-        },
-        {
-            "origin": [ -44.0, 19.0, 4.0 ],
-            "size": [ 56.0, 0.0, 56.0 ],
-            "uv": [ -56, 88 ]
-        }
-        ]
-    },
-    {
-        "name": "wingtip1",
-        "pivot": [ -56.0, 24.0, 0.0 ],
-        "cubes": [
-        {
-            "origin": [ -112.0, 22.0, -2.0 ],
-            "size": [ 56.0, 4.0, 4.0 ],
-            "uv": [ 112, 136 ]
-        },
-        {
-            "origin": [ -112.0, 24.0, 2.0 ],
-            "size": [ 56.0, 0.0, 56.0 ],
-            "uv": [ -56, 144 ]
-        }
-        ]
-    },
-    {
-        "name": "rearleg",
-        "pivot": [ -16.0, 8.0, 42.0 ],
-        "cubes": [
-        {
-            "origin": [ -24.0, -20.0, 34.0 ],
-            "size": [ 16.0, 32.0, 16.0 ],
-            "uv": [ 0, 0 ]
-        }
-        ]
-    },
-    {
-        "name": "rearleg1",
-        "pivot": [ 16.0, 8.0, 42.0 ],
-        "cubes": [
-        {
-            "origin": [ 8.0, -20.0, 34.0 ],
-            "size": [ 16.0, 32.0, 16.0 ],
-            "uv": [ 0, 0 ]
-        }
-        ]
-    },
-    {
-        "name": "frontleg",
-        "pivot": [ -12.0, 4.0, 2.0 ],
-        "cubes": [
-        {
-            "origin": [ -16.0, -16.0, -2.0 ],
-            "size": [ 8.0, 24.0, 8.0 ],
-            "uv": [ 112, 104 ]
-        }
-        ]
-    },
-    {
-        "name": "frontleg1",
-        "pivot": [ 12.0, 4.0, 2.0 ],
-        "cubes": [
-        {
-            "origin": [ 8.0, -16.0, -2.0 ],
-            "size": [ 8.0, 24.0, 8.0 ],
-            "uv": [ 112, 104 ]
-        }
-        ]
-    },
-    {
-        "name": "rearlegtip",
-        "pivot": [ 0.0, -8.0, -4.0 ],
-        "cubes": [
-        {
-            "origin": [ -6.0, -38.0, -4.0 ],
-            "size": [ 12.0, 32.0, 12.0 ],
-            "uv": [ 196, 0 ]
-        }
-        ]
-    },
-    {
-        "name": "rearlegtip1",
-        "pivot": [ 0.0, -8.0, -4.0 ],
-        "cubes": [
-        {
-            "origin": [ -6.0, -38.0, -4.0 ],
-            "size": [ 12.0, 32.0, 12.0 ],
-            "uv": [ 196, 0 ]
-        }
-        ]
-    },
-    {
-        "name": "frontlegtip",
-        "pivot": [ 0.0, 4.0, -1.0 ],
-        "cubes": [
-        {
-            "origin": [ -3.0, -19.0, -4.0 ],
-            "size": [ 6.0, 24.0, 6.0 ],
-            "uv": [ 226, 138 ]
-        }
-        ]
-    },
-    {
-        "name": "frontlegtip1",
-        "pivot": [ 0.0, 4.0, -1.0 ],
-        "cubes": [
-        {
-            "origin": [ -3.0, -19.0, -4.0 ],
-            "size": [ 6.0, 24.0, 6.0 ],
-            "uv": [ 226, 138 ]
-        }
-        ]
-    },
-    {
-        "name": "rearfoot",
-        "pivot": [ 0.0, -7.0, 4.0 ],
-        "cubes": [
-        {
-            "origin": [ -9.0, -13.0, -16.0 ],
-            "size": [ 18.0, 6.0, 24.0 ],
-            "uv": [ 112, 0 ]
-        }
-        ]
-    },
-    {
-        "name": "rearfoot1",
-        "pivot": [ 0.0, -7.0, 4.0 ],
-        "cubes": [
-        {
-            "origin": [ 9.0, -13.0, -16.0 ],
-            "size": [ 18.0, 6.0, 24.0 ],
-            "uv": [ 112, 0 ]
-        }
-        ]
-    },
-    {
-        "name": "frontfoot",
-        "pivot": [ 0.0, 1.0, 0.0 ],
-        "cubes": [
-        {
-            "origin": [ -4.0, -3.0, -12.0 ],
-            "size": [ 8.0, 4.0, 16.0 ],
-            "uv": [ 144, 104 ]
-        }
-        ]
-    },
-    {
-        "name": "frontfoot1",
-        "pivot": [ 0.0, 1.0, 0.0 ],
-        "cubes": [
-        {
-            "origin": [ -4.0, -3.0, -12.0 ],
-            "size": [ 8.0, 4.0, 16.0 ],
-            "uv": [ 144, 104 ]
-        }
-        ]
-    }
-    ]
-}`;
-const enderDragon = JSON.parse(enderDragonJSON);
+function loadAnimal(animal) {
+    animalModel = JSON.parse(loadFileContents(".mcpack/models/entity/" + animal + ".geo.json"))
+    animalAnim = JSON.parse(loadFileContents(".mcpack/animations/" + animal + ".animation.json"))
+}
+
+// Function from ChatGPT
+async function loadFileContents(file) {
+  const response = await fetch(file); // or .json, .glsl, etc.
+  const text = await response.text();
+
+  // code here waits until the file is loaded
+  console.log(text);
+
+  return text;
+}
+
+let animalModel;
+let animalAnim;
