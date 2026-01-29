@@ -89,8 +89,8 @@ let fpsElement;
 
 function setUpElements() {
     fpsElement = document.getElementById("fps");
-    document.getElementById('yawSlide').addEventListener('input', function() {g_globalYawAngle = this.value;})
-    document.getElementById('pitchSlide').addEventListener('input', function() {g_globalPitchAngle = this.value;})
+    document.getElementById('yawSlide').addEventListener('input', function() {g_globalYawAngle = -this.value;})
+    document.getElementById('pitchSlide').addEventListener('input', function() {g_globalPitchAngle = -this.value;})
 }
 
 let rscalls = 0;
@@ -123,75 +123,46 @@ function renderScene() {
 
     clearScreen();
 
-    const globalRotMat = new Matrix4().translate(0, 0, 0.1).rotate(g_globalPitchAngle, 1, 0, 0).rotate(g_globalYawAngle, 0, 1, 0);
+    const scale = 1/120;
+    const globalRotMat = new Matrix4().scale(scale, scale, scale).rotate(g_globalPitchAngle, 1, 0, 0).rotate(g_globalYawAngle, 0, 1, 0);
     gl.uniformMatrix4fv(u_GloabalRotateMatrix, false, globalRotMat.elements)
  
-    drawObjAndChildren(animalModel["minecraft:geometry"][0].bones, new Matrix4());
+    // drawObjAndChildren(animalModel["minecraft:geometry"][0].bones, new Matrix4());
     
+    for (const key in parts) {
+        parts[key].render();
+    }
 }
 
 let variable;
+const parts = {};
 
 function tick() {
     requestAnimationFrame(tick);
-    if (!loadedModelAndAnim) return;
+
     g_seconds = performance.now()/1000.0-g_startTime
-    variable = getAnimationVariables();
-    renderScene();
-}
-
-function drawObjAndChildren(obj, matrix) {
-    // matrix = matrix.copy();
-    if (Array.isArray(obj)) {
-        for (let o of obj) {
-            drawObjAndChildren(o, matrix);
-        }
-        return;
-    }
-    const cubes = obj.cubes;
-    if (cubes === undefined) return;
-
-    let rotation = undefined;
-
-    let time = 4;
-
-    if (obj.rotation !== undefined) {
-        rotation = [eval(obj.rotation[0]), obj.rotation[1], obj.rotation[2], obj.rotation[3]];
-    }
-
-    for (let c of cubes) {
-        drawCubePart(c.size, c.origin, obj.pivot, rotation);
-        if (c.mirror === true) {
-            const newOrigin = [c.origin[0], -c.origin[1], c.origin[2]];
-            drawCubePart(c.size, newOrigin, obj.pivot, rotation);
-        }
-    }
-}
-
-function drawCubePart(size, origin, pivot, rotation) {
-    const cube = new Cube();
-    cube.color = [1, 0, 0, 1];
     
-    cube.matrix.scale(0.2, 0.2, 0.2);
-    cube.matrix.scale(0.2, 0.2, 0.2);
-    cube.matrix.scale(0.2, 0.2, 0.2);
-
-    if (pivot !== undefined && rotation !== undefined) {
-
-        // 1. move to pivot
-        cube.matrix.translate(pivot[0], pivot[1], pivot[2]);
-
-        // 2. rotate around pivot
-        cube.matrix.rotate(rotation[0], rotation[1], rotation[2], rotation[3]);
-
-        // 3. move back from pivot
-        cube.matrix.translate(-pivot[0], -pivot[1], -pivot[2]);
+    parts.body = new Cube(0, 0, 0, 64, 24, 24);
+    let tail = parts.body;
+    for (let i = 0; i < 12; i++) {
+        tail = tail.add(new Cube(37 + 10*i, 0, -2.5, 10, 10, 10, ));
+        tail.add((new Cube(37 + 10*i, 0, 4.5, 6, 2, 4)).col(125, 125, 125, 255));
     }
+    let neck = parts.body;
+    for (let i = 0; i < 5; i++) {
+        neck = neck.add(new Cube(-37 - 10*i, 0, -2.5, 10, 10, 10));
+        neck.add((new Cube(-37 - 10*i, 0, 4.5, 6, 2, 4)).col(125, 125, 125, 255));
+    }
+    const head = neck.add(new Cube(-90, 0, -2.5, 16, 16, 16));
+    head.add(new Cube(-90, 4, 7.5, 6, 2, 4)) // ear
+    head.add(new Cube(-90, -4, 7.5, 6, 2, 4)) // ear
+    head.add(new Cube(-106, 0, -4, 16, 12, 5)) // nose
+    head.add(new Cube(-110, 4, -0.5, 4, 2, 2)) // nostril
+    head.add(new Cube(-110, -4, -0.5, 4, 2, 2)) // nostril
+    head.add(new Cube(-106, 0, -8.5, 16, 12, 4, -98, 0, -8.5, "(Math.sin(g_seconds*2)+1) * 8", 0, 1, 0)) // jaw TODO ANIMATE ME
+    
 
-    // cube.matrix.rotate(rotation[0], rotation[1], rotation[2], rotation[3])
-    cube.matrix.translate(origin[0], origin[1], origin[2]);
-    cube.matrix.scale(size[0], size[1], size[2]);
-    cube.render();
+    renderScene();
 }
 
 function sendTextToHTML(text, ID) {
@@ -238,23 +209,3 @@ function updateFPS(now) {
 }
 
 requestAnimationFrame(updateFPS);
-
-let loadedModelAndAnim = false;
-
-loadAnimal("ender_dragon");
-
-async function loadAnimal(animal) {
-    animalModel = JSON.parse(await loadFileContents("./mcpack/models/entity/" + animal + ".geo.json"));
-    animalAnim = JSON.parse(await loadFileContents("./mcpack/animations/" + animal + ".animation.json"));
-    loadedModelAndAnim = true;
-}
-
-// Function from ChatGPT
-async function loadFileContents(file) {
-
-    // console.log(file);
-
-    const response = await fetch(file); // or .json, .glsl, etc.
-    let text = await response.text();
-    return text;
-}

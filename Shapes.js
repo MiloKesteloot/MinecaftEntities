@@ -1,14 +1,41 @@
 class Cube {
-    constructor() {
+    constructor(x, z, y, sx, sz, sy, px, pz, py, r, ax, az, ay) {
         this.type='cube';
-        this.color = [1, 1, 1, 1];
-
+        this.color = [0.2, 0.2, 0.2, 1];
         this.matrix = new Matrix4();
+        this.children = [];
+
+        if (px !== undefined) {
+
+            // 1. move to pivot
+            this.matrix.translate(px, py, pz);
+
+            // 2. rotate around pivot
+            this.matrix.rotate(eval(r), ax, ay, az);
+
+            // 3. move back from pivot
+            this.matrix.translate(-px, -py, -pz);
+        }
+
+        // cube.matrix.rotate(rotation[0], rotation[1], rotation[2], rotation[3])
+        this.matrix.translate(x, y, z);
+        this.matrix.scale(sx, sy, sz);
+    }
+
+    col(r, g, b, a) {
+        this.color = [r/255.0, g/255.0, b/255.0, a/255.0];
+        return this;
+    }
+
+    add(cube) {
+        this.children.push(cube);
+        return cube;
     }
 
     render() {
         let rgba = this.color;
 
+        
         
         gl.uniformMatrix4fv(u_ModelMatrix, false, this.matrix.elements)
 
@@ -40,7 +67,9 @@ class Cube {
         Triangle3D.draw( [1,1,1,   0,0,1,   1,0,1], col6);
         Triangle3D.draw( [1,1,1,   0,1,1,   0,0,1], col6);
 
-        Triangle3D.draw( [])
+        for (const key in this.children) {
+            this.children[key].render();
+        }
     }
 
     multColor(rgba, m) {
@@ -60,6 +89,8 @@ class Triangle3D {
     }
 
     static draw(corners, color = [1, 0.5, 1, 1]) {
+        corners = corners.map(x => x - 0.5);
+
         var n = corners.length/2; // The number of vertices
 
         // Create a buffer object
