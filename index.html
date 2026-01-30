@@ -4,38 +4,41 @@
     <meta charset="utf-8" />
     <title>Ender Dragon</title>
     <link rel="icon" type="image/png" href="./icon.png">
+    <link rel="stylesheet" href="style.css">
   </head>
 
   <body onload="main()">
-    <canvas id="webgl" width="400" height="400">
+    <canvas id="webgl" width="1000" height="1000">
       Please use a browser that supports "canvas"
     </canvas>
 
-    <p id="fps">FPS: ???</p>
+    <div class="sidebar">
+      <p id="fps">FPS: ???</p>
 
-    <input type="button" value="Pause Animation" onclick="pauseButtonClicked()" id="pauseButton">
+      <input type="button" value="Pause Animation" onclick="pauseButtonClicked()" id="pauseButton">
 
-    <p>
-      Neck:<br>
-      Left/Right <input type="range" min="-20" max="20" value="0" class="slider" id="neckYawAngleSlide"><br>
-      Down/Up <input type="range" min="-20" max="20" value="0" class="slider" id="neckPitchAngleSlide">
-    </p>
-    <p>
-      Front Legs:<br>
-      Forearm <input type="range" min="-45" max="45" value="0" class="slider" id="forearmAngleSlide"><br>
-      Wrist <input type="range" min="-45" max="45" value="0" class="slider" id="wristAngleSlide"><br>
-      Foot <input type="range" min="-45" max="45" value="0" class="slider" id="footAngleSlide">
-    </p>
-    <p>
-      Back Legs:<br>
-      Thigh <input type="range" min="-45" max="45" value="0" class="slider" id="thighAngleSlide"><br>
-      Calf <input type="range" min="-45" max="45" value="0" class="slider" id="calfAngleSlide"><br>
-      Foot <input type="range" min="-45" max="45" value="0" class="slider" id="backFootAngleSlide">
-    </p>
+      <p>
+        Neck:<br>
+        Left/Right <input type="range" min="-20" max="20" value="0" class="slider" id="neckYawAngleSlide"><br>
+        Down/Up <input type="range" min="-20" max="20" value="0" class="slider" id="neckPitchAngleSlide">
+      </p>
+      <p>
+        Front Legs:<br>
+        Forearm <input type="range" min="-45" max="45" value="0" class="slider" id="forearmAngleSlide"><br>
+        Wrist <input type="range" min="-45" max="45" value="0" class="slider" id="wristAngleSlide"><br>
+        Foot <input type="range" min="-45" max="45" value="0" class="slider" id="footAngleSlide">
+      </p>
+      <p>
+        Back Legs:<br>
+        Thigh <input type="range" min="-45" max="45" value="0" class="slider" id="thighAngleSlide"><br>
+        Calf <input type="range" min="-45" max="45" value="0" class="slider" id="calfAngleSlide"><br>
+        Foot <input type="range" min="-45" max="45" value="0" class="slider" id="backFootAngleSlide">
+      </p>
 
-    <p>
-      Camera Angle <input type="range" min="-180" max="180" value="0" class="slider" id="yawSlide"> <input type="range" min="-180" max="180" value="0" class="slider" id="pitchSlide">
-    </p>
+      <p>
+        Camera Angle <input type="range" min="-180" max="180" value="0" class="slider" id="yawSlide"> <input type="range" min="-180" max="180" value="0" class="slider" id="pitchSlide">
+      </p>
+    </div>
 
     <script src="lib/cuon-utils.js"></script>
     <script src="lib/webgl-utils.js"></script>

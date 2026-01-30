@@ -1,0 +1,9 @@
+body {
+    display: flex;
+    margin: 0;
+}
+
+canvas {
+    height: 100vh;
+    aspect-ratio: 1;
+}

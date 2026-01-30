@@ -145,7 +145,7 @@ function renderScene() {
 
     clearScreen();
 
-    const scale = 1/140;
+    const scale = 1/160;
     const globalRotMat = new Matrix4().scale(scale, scale, scale).rotate(g_globalPitchAngle, 1, 0, 0).rotate(g_globalYawAngle, 0, 1, 0);
     gl.uniformMatrix4fv(u_GloabalRotateMatrix, false, globalRotMat.elements)
  
