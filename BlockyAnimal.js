@@ -1,5 +1,3 @@
-// import {Triangle} from './Triangle.js';
-
 let ctx;
 
 // ColoredPoint.js (c) 2012 matsuda
@@ -23,10 +21,11 @@ precision mediump float;
 uniform vec4 u_FragColor;
 uniform sampler2D u_Sampler;
 uniform int u_UseTexture;
+uniform int u_EnableColors;
 varying vec2 v_TexCoord;
 void main() {
     vec4 color;
-    if (u_UseTexture == 1) {
+    if (u_UseTexture == 1 && u_EnableColors == 0) {
         vec4 texColor = texture2D(u_Sampler, v_TexCoord);
         color = texColor * u_FragColor;
         if (color.a < 0.1) {
@@ -44,6 +43,7 @@ let gl;
 let a_Position;
 let u_FragColor;
 let u_Sampler;
+let u_EnableColors;
 let u_ModelMatrix;
 let u_GloabalRotateMatrix;
 
@@ -101,6 +101,9 @@ function connectVariablesToGLSL() {
     u_GloabalRotateMatrix = getUniformLocation(gl.program, 'u_GloabalRotateMatrix');
     u_Sampler = getUniformLocation(gl.program, 'u_Sampler');
     u_UseTexture = getUniformLocation(gl.program, 'u_UseTexture');
+    u_EnableColors = getUniformLocation(gl.program, 'u_EnableColors');
+
+    gl.uniform1i(u_EnableColors, 0);
 
     let identityM = new Matrix4();
     gl.uniformMatrix4fv(u_ModelMatrix, false, identityM.elements);
@@ -126,7 +129,6 @@ function connectVariablesToGLSL() {
     };
 
     image.src = './dragon.png';
-    // image.src = './test.png';
 }
 
 let fpsElement;
@@ -211,21 +213,34 @@ let parts = {};
 
 function buildModel() {
     parts = {};
-    parts.body = new Cube(0, 0, 0, 64, 24, 24,          1000, 0, 0, "Math.sin(g_seconds*g_speed - 1.9) * 0.2", 0, 1, 0);
-    parts.body.applyTexture("top", [8*8, 24*8, 3*8, 8*8]);
-    parts.body.applyTexture("bottom", [11*8, 24*8, 3*8, 8*8]);
-    parts.body.applyTexture(["left", "right"], [11*8, 21*8, 8*8, 3*8], 1);
-    parts.body.applyTexture(["front", "back"], [8*8, 21*8, 8*3, 3*8]);
+
+    let body = new Cube(0, 0, 0, 0, 0, 0,            1000, 0, 0, "Math.sin(g_seconds*g_speed - 1.9) * 0.2", 0, 1, 0);
+    parts.body = body;
+    let bodyAnim = [];
+    if (funTimer !== -1) {
+        const megaAnim = `
+            diveAmount*90;
+        `;
+        bodyAnim = [0, 0, 0, megaAnim, 0, 1, 0];
+    }    
+    body = body.add(new Cube(0, 0, 0, 64, 24, 24,          ...bodyAnim));
+    body.applyTexture("top", [8*8, 24*8, 3*8, 8*8]);
+    body.applyTexture("bottom", [11*8, 24*8, 3*8, 8*8]);
+    body.applyTexture(["left", "right"], [11*8, 21*8, 8*8, 3*8], 1);
+    body.applyTexture(["front", "back"], [8*8, 21*8, 8*3, 3*8]);
     for (let i = 0; i < 3; i++) {
-        const blade = parts.body.add(new Cube(-20 + 20*i, 0, 15, 12, 2, 6));
+        const blade = body.add(new Cube(-20 + 20*i, 0, 15, 12, 2, 6));
         blade.applyTexture(["left", "right"], [256 - 5*8 + 4, 256 - 9*8 + 1 + 6, 12, -6], 1)
         blade.applyTexture(["front"], [256 - 5*8 + 4 + 12, 256 - 9*8 + 1, 2, 6])
         blade.applyTexture(["back"], [256 - 5*8 + 4 + 12 + 14, 256 - 9*8 + 1, 2, 6])
         blade.applyTexture(["top", "bottom"], [256 - 5*8 + 4 + 12, 256 - 9*8 + 1 + 6, 2, 12])
     }
-    let tail = parts.body;
+    let tail = body;
     for (let i = 0; i < 12; i++) {
-        tail = tail.add(new Cube(37 + 10*i, 0, -2.5, 10, 10, 10,      37 + 10*i - 5, 0, -2.5, "Math.sin(g_seconds*g_speed + 1 + 2 + " + i/2 + ") * 3", 0, 1, 0));
+        tail = tail.add(new Cube(37 + 10*i, 0, -2.5, 10, 10, 10,
+            37 + 10*i - 5, 0, -2.5,
+            "Math.sin((g_seconds+funAnimOffset*2)*g_speed + 1 + 2 + " + i/2 + ") * (3 * (1-diveAmount) + " + i + "/3 * (diveAmount))",
+            0, 1, 0));
         tail.applyTexture("all", [24*8 + 1*10, 16*8+4, 10, 10], (i*2+1)%4);
         tail.applyTexture("top", [24*8 + 1*10, 16*8+4 + 10, 10, 10]);
         tail.applyTexture("back", [24*8 + 1*10, 16*8+4, 10, 10]);
@@ -235,7 +250,7 @@ function buildModel() {
         nob.applyTexture(["top", "bottom"], [6, 256, 2, -6]);
         nob.applyTexture(["front"], [6, 256 - 6 + 2, 2, 4]);
     }
-    let neck = parts.body;
+    let neck = body;
     for (let i = 0; i < 5; i++) {
         neck = neck.add(new Cube(-37 - 10*i, 0, -2.5, 0.01, 0.01, 0.01,       -37 - 10*i + 5, 0, -2.5, g_neckYawAngle, 0, 0, 1))
         neck = neck.add(new Cube(-37 - 10*i, 0, -2.5, 10, 10, 10,       -37 - 10*i + 5, 0, -2.5, "(Math.sin(g_seconds*g_speed + " + i/1.2 + ") + 0.3) * 4 + " + g_neckPitchAngle, 0, 1, 0));
@@ -278,7 +293,7 @@ function buildModel() {
         ear.applyTexture(["top", "bottom"], [6, 256 - 6, 2, 6]);
         ear.applyTexture(["back"], [6, 256 - 6 + 2, 2, 4]);
 
-        const forearm = parts.body.add(new Cube(-16, 12 * n, -6, 24, 8, 8,         -24, 16 * n, -6, "(Math.sin(g_seconds*g_speed) - 0.3) * 1 - 13 + " + g_forearmAngle, 0, 1, 0));
+        const forearm = body.add(new Cube(-16, 12 * n, -6, 24, 8, 8,         -24, 16 * n, -6, "(Math.sin(g_seconds*g_speed) - 0.3) * 1 - 13 + " + g_forearmAngle, 0, 1, 0));
         forearm.applyTexture(["top", "bottom", "left", "right"], [14*8, 15*8, 1*8, 3*8])
         forearm.applyTexture(["front", "back"], [15*8, 18*8, 1*8, 1*8])
         const wrist = forearm.add(new Cube(5, 12 * n, -7, 24, 6, 6,         -4, 16 * n, -7, "(Math.sin(g_seconds*g_speed) - 0.3) * 1 - 30 + " + g_wristAngle, 0, 1, 0));
@@ -290,7 +305,7 @@ function buildModel() {
         foot.applyTexture("top", [21*8, 16*8+4, 8, 4])
         foot.applyTexture(["left", "right"], [18*8, 16*8+4, 16, 4])
 
-        const thigh = parts.body.add(new Cube(33, 16 * n, -3, 32, 16, 16,         25, 16 * n, -3, "(Math.sin(g_seconds*g_speed) + 0.3) * 1 - 30 + " + g_thighAngle, 0, 1, 0));
+        const thigh = body.add(new Cube(33, 16 * n, -3, 32, 16, 16,         25, 16 * n, -3, "(Math.sin(g_seconds*g_speed) + 0.3) * 1 - 30 + " + g_thighAngle, 0, 1, 0));
         thigh.applyTexture(["front", "back"], [8*2, 256-16, 16, 16]);
         thigh.applyTexture(["top", "bottom", "left", "right"], [8*2, 256-16-32, 16, 32]);
         const shin = thigh.add(new Cube(64, 16 * n, -3, 32, 12, 12,         54, 16 * n, -3, "(Math.sin(g_seconds*g_speed + 2)) * 1 + 30 + " + g_calfAngle, 0, 1, 0));
@@ -304,20 +319,44 @@ function buildModel() {
         backFoot.applyTexture(["left", "right"], [17*8 + 18, 256-8*3, 18, -6]);
 
         // Wings!
-        let wingTilt = parts.body.add(new Cube(-20, 12*n, 12, 0, 0, 0,          -20, 12*n, 12, "25 + Math.sin(g_seconds*g_speed + 1) * 10", 0, 1, 0));
-        wingTilt = wingTilt.add(new Cube(-20, 12*n, 12, 0, 0, 0,          -20, 12*n, 12, "15", 0, 0, 1 * n));
-        const wingFrame1 = wingTilt.add(new Cube(-20, 40 * n, 12, 8, 56, 8,      -20, 12*n, 12, "((Math.sin(g_seconds*g_speed + 2.2)) * 55 - 10) * " + n, 1, 0, 0).col(125, 125, 125, 255))
+        // Wing pitch
+        let wingTilt = body.add(new Cube(-20, 12*n, 12, 0, 0, 0,
+            -20, 12*n, 12,
+            `(25 + Math.sin(g_seconds*g_speed + 1) * 10) * (1-diveAmount)
+             + 10 * diveAmount`,
+            0, 1, 0));
+        // Wing yaw
+        wingTilt = wingTilt.add(new Cube(-20, 12*n, 12, 0, 0, 0,
+            -20, 12*n, 12,
+            "15 + 25 * diveAmount",
+            0, 0, 1 * n));
+        // Wing roll
+        const wingFrame1 = wingTilt.add(new Cube(-20, 40 * n, 12, 8, 56, 8,
+            -20, 12*n, 12,
+            `
+            (
+            ((Math.sin(g_seconds*g_speed + 2.2)) * 55 - 10) * (1-diveAmount) +
+            (Math.sin(funAnimOffset*10)*2) * diveAmount
+        )
+            * ` + n,
+            1, 0, 0).col(125, 125, 125, 255))
         wingFrame1.applyTexture(["left", "right"], [14*8, 19*8, 1*8, 1*8]);
         wingFrame1.applyTexture(["top", "bottom", "front", "back"], [15*8, 20*8, 7*8, 1*8]);
-        const wingFrame2 = wingFrame1.add(new Cube(-18, 96 * n, 12, 4, 56, 4,      -20, 68*n, 12, "((Math.sin(g_seconds*g_speed + 1)) * 45 + 30) * " + n, 1, 0, 0).col(125, 125, 125, 255))
+        const wingFrame2 = wingFrame1.add(new Cube(-18, 96 * n, 12, 4, 56, 4,
+            -20, 68*n, 12,
+            `(   ((Math.sin(g_seconds*g_speed + 1)) * 45 + 30) * (1-diveAmount) +
+                  (10 + Math.sin(funAnimOffset*45)*2) * diveAmount
+              ) * ` + n,
+            1, 0, 0).col(125, 125, 125, 255))
         wingFrame2.applyTexture(["left", "right"], [14*8, 14*8, 1*4, 1*4]);
         wingFrame2.applyTexture(["top", "bottom", "front", "back"], [15*8, 14*8, 7*8, 1*4]);
         const flapClose = wingFrame1.add(new Plane(12, 40 * n, 12, 56, 56, 1));
         flapClose.transparent = true;
+        const fixRange = 0.4;
         if (n === 1) {
-            flapClose.applyTexture("top", [0, 14*8, 7*8,  7*8]);
+            flapClose.applyTexture("top", [0, 14*8, 7*8 - fixRange,  7*8]);
         } else {
-            flapClose.applyTexture("top", [7*8, 14*8, -7*8, 7*8]);
+            flapClose.applyTexture("top", [7*8 - fixRange, 14*8, -(7*8 - fixRange), 7*8]);
         }
         const flapFar = wingFrame2.add(new Plane(12, 96 * n, 12, 56, 56, 1));
         flapFar.transparent = true;
@@ -329,11 +368,38 @@ function buildModel() {
     }
 }
 
+function updateAnimationAngles() {
+    g_seconds = performance.now()/1000.0-g_startTime;
+
+    if (funTimer !== -1) {
+        const oldFunTimer = funTimer;
+        funTimer = performance.now()/1000.0-funTimerStart;
+
+        function _cos(v) {
+            return (-Math.cos(v) + 1)/2;
+        }
+
+        if (funTimer < diveTime) {
+            diveAmount = _cos((funTimer/diveTime)*Math.PI);
+        } else if (funTimer < stillTime + diveTime){
+            diveAmount = 1;
+        } else {
+            diveAmount = _cos((funTimer - stillTime)/diveTime*Math.PI);
+        }
+        if (funTimer >= stillTime + diveTime + diveTime) {
+            funTimer = -1;
+            diveAmount = 0;
+        }
+
+        funAnimOffset += (funTimer - oldFunTimer) * diveAmount;
+    }
+}
+
 function tick() {
     requestAnimationFrame(tick);
 
     if (!paused) {
-        g_seconds = performance.now()/1000.0-g_startTime
+        updateAnimationAngles();
     }
     
     renderScene();
@@ -394,16 +460,38 @@ let dragging = false;
 let lastMouseX = 0;
 let lastMouseY = 0;
 let dragSensitivity = 0.8;
+let funAnim = -1;
+
+let funTimer = -1;
+let funTimerStart = 0;
+let funAnimOffset = 0;
+
+let diveAmount = 0;
+let diveTime = 2;
+let stillTime = 3;
+
+
+function funAnimation() {
+    funTimer = 0;
+    funTimerStart = performance.now()/1000.0;
+}
 
 function click(event) {
+    if (event.shiftKey) {
+        funAnim = false;
+        funAnimation();
+        return;
+    }
     dragging = true;
     lastMouseX = event.clientX;
     lastMouseY = event.clientY;
+    funAnim = true;
 }
 function move(event) {
     if (!dragging) {
         return;
     }
+    funAnim = false;
     const deltaX = event.clientX - lastMouseX;
     const deltaY = event.clientY - lastMouseY;
     dragX = deltaX * dragSensitivity;
@@ -415,6 +503,10 @@ function move(event) {
     lastMouseY = event.clientY;
 }
 function clickup(event) {
+    if (funAnim) {
+        funAnimation();
+    }
+
     dragging = false;
 }
 function exit(event) {

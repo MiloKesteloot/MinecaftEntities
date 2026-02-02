@@ -112,7 +112,7 @@ class Shape {
         console.error(this);
     }
 
-    multColor(rgba, m) {
+    static multColor(rgba, m) {
         return [rgba[0]*m, rgba[1]*m, rgba[2]*m, rgba[3]];
     }
 
@@ -173,7 +173,10 @@ class Shape {
 
 class Cube extends Shape {
     subRender(worldMatrix) {
-        let rgba = this.color;
+        Cube.drawCube(worldMatrix, this.color, this.uvCoords);
+    }
+
+    static drawCube(matrix, rgba, uv) {
         const col1 = rgba;
         const col2 = this.multColor(rgba, 0.85);
         const col3 = this.multColor(rgba, 0.7);
@@ -181,22 +184,19 @@ class Cube extends Shape {
         const col5 = this.multColor(rgba, 0.4);
         const col6 = this.multColor(rgba, 0.35);
 
-        const uv = this.uvCoords;
-
         // Top
-        Cube.drawFace(col1, uv.top, worldMatrix, []);
+        Cube.drawFace(col1, uv.top, matrix, []);
         // Bottom
-        Cube.drawFace(col2, uv.bottom, worldMatrix, [[180, 0, 0, 1], [180, 0, 1, 0]]);
+        Cube.drawFace(col2, uv.bottom, matrix, [[180, 0, 0, 1], [180, 0, 1, 0]]);
         // Front
-        Cube.drawFace(col3, uv.front, worldMatrix, [[90, 0, 0, 1]]);
+        Cube.drawFace(col3, uv.front, matrix, [[90, 0, 0, 1]]);
         // Back
-        Cube.drawFace(col4, uv.back, worldMatrix, [[-90, 0, 0, 1], [180, 0, 1, 0]]);
+        Cube.drawFace(col4, uv.back, matrix, [[-90, 0, 0, 1], [180, 0, 1, 0]]);
         // Right
-        Cube.drawFace(col5, uv.right, worldMatrix, [[90, 1, 0, 0]]);
+        Cube.drawFace(col5, uv.right, matrix, [[90, 1, 0, 0]]);
         // Left
-        Cube.drawFace(col6, uv.left, worldMatrix, [[-90, 1, 0, 0]]);
+        Cube.drawFace(col6, uv.left, matrix, [[-90, 1, 0, 0]]);
     }
-
 
     static drawFace(col, uv, m, rotations) {
 
@@ -218,7 +218,7 @@ class Cube extends Shape {
 class Plane extends Shape {
     subRender() {
         let rgba = this.color;
-        const col4 = this.multColor(rgba, 0.55);
+        const col4 = Shape.multColor(rgba, 0.55);
         Triangle3D.draw([0,0.5,1, 1,0.5,0, 0,0.5,0], col4, this.uvCoords.top ? this.uvCoords.top.slice(0,6) : null);
         Triangle3D.draw([0,0.5,1, 1,0.5,1, 1,0.5,0], col4, this.uvCoords.top ? this.uvCoords.top.slice(6,12) : null);
     }
