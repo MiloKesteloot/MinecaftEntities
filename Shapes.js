@@ -7,6 +7,8 @@ class Shape {
         this.parent = null;
         this.children = [];
 
+        this.faceCamera = false;
+
         this.position = [x, y, z];
         this.scale = [sx, sy, sz];
         this.pivot = [px, py, pz];
@@ -35,6 +37,13 @@ class Shape {
         }
 
         this.matrix.translate(this.position[0], this.position[1], this.position[2]);
+
+        if (this.faceCamera) {
+            const cameraMat = new Matrix4().rotate(g_globalPitchAngle, 1, 0, 0).rotate(g_globalYawAngle, 0, 1, 0);
+            cameraMat.setInverseOf(cameraMat);
+            this.matrix.multiply(cameraMat);
+            this.matrix.rotate(90, 1, 0, 0);
+        }
 
         this.nonScaleMatrix = new Matrix4(this.matrix);
 

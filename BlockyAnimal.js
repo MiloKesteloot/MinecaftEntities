@@ -6,11 +6,12 @@ let VSHADER_SOURCE = `
 attribute vec4 a_Position;
 uniform mat4 u_ModelMatrix;
 uniform mat4 u_GloabalRotateMatrix;
+uniform mat4 u_ProjectionMatrix;
 
 attribute vec2 a_TexCoord;
 varying vec2 v_TexCoord;
 void main() {
-    gl_Position = u_GloabalRotateMatrix * u_ModelMatrix * a_Position;
+    gl_Position = u_ProjectionMatrix * u_GloabalRotateMatrix * u_ModelMatrix * a_Position;
     v_TexCoord = a_TexCoord;
 }`;
 
@@ -46,6 +47,7 @@ let u_Sampler;
 let u_EnableColors;
 let u_ModelMatrix;
 let u_GloabalRotateMatrix;
+let u_ProjectionMatrix;
 
 function setUpWebGL() {
     // Retrieve <canvas> element
@@ -99,6 +101,7 @@ function connectVariablesToGLSL() {
     u_FragColor = getUniformLocation(gl.program, 'u_FragColor');
     u_ModelMatrix = getUniformLocation(gl.program, 'u_ModelMatrix');
     u_GloabalRotateMatrix = getUniformLocation(gl.program, 'u_GloabalRotateMatrix');
+    u_ProjectionMatrix = getUniformLocation(gl.program, 'u_ProjectionMatrix');
     u_Sampler = getUniformLocation(gl.program, 'u_Sampler');
     u_UseTexture = getUniformLocation(gl.program, 'u_UseTexture');
     u_EnableColors = getUniformLocation(gl.program, 'u_EnableColors');
@@ -147,7 +150,14 @@ function setUpElements() {
     document.getElementById('wristAngleSlide').addEventListener('input', function() {g_wristAngle = -this.value;})
     document.getElementById('footAngleSlide').addEventListener('input', function() {g_footAngle = -this.value;})
     document.getElementById('yawSlide').addEventListener('input', function() {g_globalYawAngle = -this.value;})
-    document.getElementById('pitchSlide').addEventListener('input', function() {g_globalPitchAngle = -this.value;})
+    document.getElementById('pitchSlide').addEventListener('input', function() {g_globalPitchAngle = -this.value + 180;})
+    document.getElementById('colorPicker').addEventListener('input', function() {
+        const hex = this.value;
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        gl.clearColor(r/255, g/255, b/255, 1);
+    });
 }
 
 function pauseButtonClicked() {
@@ -178,10 +188,7 @@ function main() {
     canvas.onmouseleave = exit;
     canvas.onwheel = scroll;
 
-    // Specify the color for clearing <canvas>
-    // gl.clearColor(1.0, 1.0, 1.0, 1.0);
-    gl.clearColor(0, 0, 0, 1);
-    // gl.clearColor(20/255, 16/255, 20/255, 1.0);
+    gl.clearColor(26/255, 0, 36/255, 1);
 
     buildModel();
     createParticles()
@@ -196,11 +203,27 @@ function clearScreen() {
 function renderScene() {    
     rscalls++;
 
+
     clearScreen();
 
-    const scale = 1/160 * g_globalScale;
+    const near = -5000;
+    const far = 5000;
+    const aspectRatio = canvas.width / canvas.height;
+    const viewSize = 2;
+    const projectionMatrix = new Matrix4().setOrtho(
+        -viewSize * aspectRatio, viewSize * aspectRatio,
+        viewSize, -viewSize,  // Swapped! (was -viewSize, viewSize)
+        near, far
+    );
+    gl.uniformMatrix4fv(u_ProjectionMatrix, false, projectionMatrix.elements);
+
+    const scale = 1/160 * g_globalScale;  // Your original line
     const globalRotMat = new Matrix4().scale(scale, scale, scale).rotate(g_globalPitchAngle, 1, 0, 0).rotate(g_globalYawAngle, 0, 1, 0);
     gl.uniformMatrix4fv(u_GloabalRotateMatrix, false, globalRotMat.elements)
+
+    // const scale = 1/160 * g_globalScale;
+    // const globalRotMat = new Matrix4().scale(scale, scale, scale).rotate(g_globalPitchAngle, 1, 0, 0).rotate(g_globalYawAngle, 0, 1, 0);
+    // gl.uniformMatrix4fv(u_GloabalRotateMatrix, false, globalRotMat.elements)
  
     buildModel();
     if (drawParts) drawParticles();
@@ -229,7 +252,7 @@ function createParticles() {
     }
 
     for (let i = 0; i < 200; i++) {
-        particles.push([rnd(particleXBounds), rnd(particleYBounds), rnd(particleZBounds)]);
+        particles.push([rnd(particleXBounds), rnd(particleYBounds), rnd(particleZBounds), Math.floor(Math.random()*4)]);
     }
 }
 
@@ -255,8 +278,10 @@ function drawParticles() {
         particle[1] = mapSpace(particle[1], particleYBounds);
         particle[2] = mapSpace(particle[2], particleZBounds);
 
-        const part = new Cube(...particle, 3, 3, 3).col(255, 0, 0, 255);
-        part.applyTexture("all", [0, 0, 5, 5]);
+        const part = new Plane(particle[0], particle[1], particle[2], 5, 5, 5).col(255, 0, 0, 255);
+        part.faceCamera = true;
+        part.buildMatrix();
+        part.applyTexture("all", [0, 0, 5, 5], particle[3]);
         parts["particle"+i] = part;
     }
 }
@@ -463,8 +488,8 @@ function sendTextToHTML(text, ID) {
 let g_points = [];
 let g_selectedColor = [1, 1, 1, 1];
 let g_globalYawAngle = -30;
-let g_globalPitchAngle = -30;
-let g_globalScale = 1;
+let g_globalPitchAngle = -30 + 180;
+let g_globalScale = 2;
 let g_startTime = performance.now()/1000.0;
 let g_seconds = performance.now()/1000.0-g_startTime;
 let g_speed = 3.7;
@@ -527,7 +552,7 @@ function funAnimation() {
 }
 
 function click(event) {
-    if (event.shiftKey) {
+    if (event.shiftKey && funTimer === -1) {
         funAnim = false;
         funAnimation();
         return;
@@ -553,7 +578,7 @@ function move(event) {
     lastMouseY = event.clientY;
 }
 function clickup(event) {
-    if (funAnim) {
+    if (funAnim && funTimer === -1) {
         funAnimation();
     }
 
