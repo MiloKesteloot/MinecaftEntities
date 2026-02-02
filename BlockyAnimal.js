@@ -43,6 +43,7 @@ let canvas;
 let gl;
 let a_Position;
 let u_FragColor;
+let u_Sampler;
 let u_ModelMatrix;
 let u_GloabalRotateMatrix;
 
@@ -124,7 +125,7 @@ function connectVariablesToGLSL() {
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
     };
 
-    image.src = './mcpack/textures/entity/dragon/dragon.png';
+    image.src = './dragon.png';
     // image.src = './test.png';
 }
 
@@ -224,7 +225,7 @@ function buildModel() {
     }
     let tail = parts.body;
     for (let i = 0; i < 12; i++) {
-        tail = tail.add(new Cube(37 + 10*i, 0, -2.5, 10, 10, 10,      37 + 10*i - 5, 0, -2.5, "Math.sin(g_seconds*g_speed + " + i/2 + ") * 2", 0, 1, 0));
+        tail = tail.add(new Cube(37 + 10*i, 0, -2.5, 10, 10, 10,      37 + 10*i - 5, 0, -2.5, "Math.sin(g_seconds*g_speed + 1 + 2 + " + i/2 + ") * 3", 0, 1, 0));
         tail.applyTexture("all", [24*8 + 1*10, 16*8+4, 10, 10], (i*2+1)%4);
         tail.applyTexture("top", [24*8 + 1*10, 16*8+4 + 10, 10, 10]);
         tail.applyTexture("back", [24*8 + 1*10, 16*8+4, 10, 10]);
@@ -246,7 +247,6 @@ function buildModel() {
         nob.applyTexture(["top", "bottom"], [6, 256 - 6, 2, 6]);
         nob.applyTexture(["back"], [6, 256 - 6 + 2, 2, 4]);
     }
-
     const head = neck.add(new Cube(-90, 0, -2.5, 16, 16, 16,       -90, 0, -2.5, "(Math.sin(g_seconds*g_speed - 1) - 0.3) * 7", 0, 1, 0));
     {
         head.applyTexture("front", [16*8, 24*8+2, 2*8, 2*8]);
@@ -304,7 +304,9 @@ function buildModel() {
         backFoot.applyTexture(["left", "right"], [17*8 + 18, 256-8*3, 18, -6]);
 
         // Wings!
-        const wingFrame1 = parts.body.add(new Cube(-20, 40 * n, 12, 8, 56, 8,      -20, 12*n, 12, "((Math.sin(g_seconds*g_speed + 2.2)) * 55 - 10) * " + n, 1, 0, 0).col(125, 125, 125, 255))
+        let wingTilt = parts.body.add(new Cube(-20, 12*n, 12, 0, 0, 0,          -20, 12*n, 12, "25 + Math.sin(g_seconds*g_speed + 1) * 10", 0, 1, 0));
+        wingTilt = wingTilt.add(new Cube(-20, 12*n, 12, 0, 0, 0,          -20, 12*n, 12, "15", 0, 0, 1 * n));
+        const wingFrame1 = wingTilt.add(new Cube(-20, 40 * n, 12, 8, 56, 8,      -20, 12*n, 12, "((Math.sin(g_seconds*g_speed + 2.2)) * 55 - 10) * " + n, 1, 0, 0).col(125, 125, 125, 255))
         wingFrame1.applyTexture(["left", "right"], [14*8, 19*8, 1*8, 1*8]);
         wingFrame1.applyTexture(["top", "bottom", "front", "back"], [15*8, 20*8, 7*8, 1*8]);
         const wingFrame2 = wingFrame1.add(new Cube(-18, 96 * n, 12, 4, 56, 4,      -20, 68*n, 12, "((Math.sin(g_seconds*g_speed + 1)) * 45 + 30) * " + n, 1, 0, 0).col(125, 125, 125, 255))
