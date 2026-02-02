@@ -208,12 +208,6 @@ function renderScene() {
     for (const key in parts) {
         parts[key].render();
     }
-
-    if (drawParts) {
-        for (const particle of particles) {
-            particle.render();
-        }
-    }
 }
 
 let variable;
